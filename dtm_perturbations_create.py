@@ -9,10 +9,10 @@ from utils import repair_linestring_gpkg
 
 n=50
 objectid = '009.11'
-root_dir = 'data/malstroem-50'
+root_dir = 'dtm'
 raster_file = f'merged_{objectid}.tif'
 raster_dir = f'{root_dir}/merged_{objectid}'
-raster_path = f"{raster_dir}/{raster_file}" 
+raster_path = f"{root_dir}/{raster_file}" 
 perturbed_dir = f"{raster_dir}/perturbed" 
 os.makedirs(perturbed_dir, exist_ok=True)
 
@@ -33,8 +33,6 @@ def perturb_raster(raster_path, perturbed_dir, n):
         meta['dtype'] = 'float32'  # update if your perturbed data changes the data type
         with rasterio.open(file_path, 'w', **meta) as dst:
             dst.write(data, 1)
-
-
 
 if __name__=='__main__':
     for subdir, dirs, files in os.walk(root_dir):
