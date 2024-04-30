@@ -7,7 +7,7 @@ from shapely.geometry import shape, LineString, mapping
 from utils import repair_linestring_gpkg
 
 
-n=50
+n=16
 objectid = '009.11'
 root_dir = 'dtm'
 raster_file = f'merged_{objectid}.tif'
@@ -29,7 +29,7 @@ def perturb_raster(raster_path, perturbed_dir, n):
         mask = data != -32767
         perturbation = np.random.uniform(-0.5, 0.5, data.shape)
         data[mask] += perturbation[mask]
-        file_path = f"{perturbed_dir}/{raster_file[:-4]}_{i+1}.tif"
+        file_path = f"{perturbed_dir}/{raster_path[:-4]}_{i+1}.tif"
         meta['dtype'] = 'float32'  # update if your perturbed data changes the data type
         with rasterio.open(file_path, 'w', **meta) as dst:
             dst.write(data, 1)
@@ -42,4 +42,13 @@ if __name__=='__main__':
                 output_file=f"{root_dir}/{os.path.basename(subdir)}.gpkg".replace('merged', 'malstroem')
                 print(f"Repairing {input_file} to {output_file}")
                 repair_linestring_gpkg(input_file, 'streams', output_file)
+    with open('str_lst.txt','r') as fle:
+        exclude_files = fle.read().split(',')
+
+    files = [file for file in os.listdir(root_dir) if file.endswith('.tif')]
+    files_list = tqdm(files, total=len(files))
+    for file in files_list:
+        files_list.set_description(file)
+        perturb_raster(file, perturbed_dir, n)
+
 
