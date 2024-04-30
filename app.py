@@ -30,7 +30,7 @@ def run_malstroem_processing(data):
 def process():
 
     data = request.json
-    return jsonify({'message': 'Data processed successfully'})
+    return jsonify(run_malstroem_processing(data))
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
