@@ -6,8 +6,9 @@ COPY environment.yml /app/environment.yml
 
 RUN conda env create -f environment.yml
 
-SHELL ["conda", "run", "-n", "malstroem-env", "/bin/bash", "-c"]
+SHELL ["conda", "run", "-n", "malstroem", "/bin/bash", "-c"]
 
 COPY . /app
 
-ENTRYPOINT ["conda", "run", "--no-capture-output", "-n", "malstroem-env", "python", "your_script.py"]
+EXPOSE 5000
+CMD ["conda", "run", "-n", "malstroem", "python", "app.py"]
