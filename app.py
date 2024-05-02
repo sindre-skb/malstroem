@@ -40,9 +40,19 @@ def process():
 
     data = request.json
     return jsonify(run_malstroem_processing(data))
-
-def process_complete(dem, outdir, mm=20, filter='volume > 2.5', zresolution=0.1, accum=None, vector=None):
-    return complete._process_all(dem, outdir, accum, filter, mm, zresolution, vector)
+# def process_complete(dem, outdir, mm=20, filter='volume > 2.5', zresolution=0.1, accum=None, vector=None):
+@app.route('/complete', methods=['POST'])
+def process_complete():
+    data=request.json
+    dem = data.get('dem')
+    outdir = data.get('outdir')
+    mm = data.get('mm')
+    filter = data.get('filter')
+    zresolution = data.get('zresolution')
+    accum = data.get('accum')
+    vector = data.get('vector')
+    complete._process_all(dem, outdir, accum, filter, mm, zresolution, vector)
+    return jsonify({'status': 'Success'}), 200
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
