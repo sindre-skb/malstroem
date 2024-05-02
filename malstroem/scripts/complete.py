@@ -23,8 +23,21 @@ from ._utils import parse_filter
 from osgeo import ogr, osr
 import os
 
-import logging
+import logging 
+from logging.handlers import RotatingFileHandler
+
+# Create a logger for the current module
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)  # Set the logging level
+
+# Set up file handler0
+
+file_handler = RotatingFileHandler('logs/complete.log', maxBytes=5*1024*1024, backupCount=3)
+file_handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(module)s - %(message)s'))
+file_handler.setLevel(logging.DEBUG)  # Set the logging level for the file handler
+
+# Add the handler to the logger
+logger.addHandler(file_handler)
 
 @click.command('complete')
 @click.option('-dem', type=click.Path(exists=True), help='DEM raster file. Horisontal and vertical units must be meters')
@@ -79,9 +92,11 @@ def _process_all(dem, outdir, accum, filter, mm, zresolution, vector):
     depths_writer = io.RasterWriter(os.path.join(outdir, 'bs_depths.tif'), tr, crs)
     accum_writer = io.RasterWriter(os.path.join(outdir, 'accum.tif'), tr, crs) if accum else None
 
+    logger.debug('Processing DEM')
     dtmtool = demtool.DemTool(dem_reader, filled_writer, flowdir_writer, depths_writer, accum_writer)
     dtmtool.process()
 
+    logger.debug("Processing bluespots")
     # Process bluespots
     depths_reader = io.RasterReader(depths_writer.filepath)
     flowdir_reader = io.RasterReader(flowdir_writer.filepath)
@@ -92,6 +107,7 @@ def _process_all(dem, outdir, accum, filter, mm, zresolution, vector):
     labeled_writer = io.RasterWriter(os.path.join(outdir, 'bluespots.tif'), tr, crs, 0)
     labeled_vector_writer = io.VectorWriter(ogr_drv, outvector, 'bluespots', None, ogr.wkbMultiPolygon, crs, dsco=ogr_dsco, lco = ogr_lco) if vector else None
 
+    logger.debug("Processing bluespots...")
     bluespot_tool = bluespots.BluespotTool(
         input_depths=depths_reader,
         input_flowdir=flowdir_reader,
@@ -105,7 +121,7 @@ def _process_all(dem, outdir, accum, filter, mm, zresolution, vector):
         output_watersheds_vector=watershed_vector_writer
     )
     bluespot_tool.process()
-
+    logger.debug("Processing pourpoints...")
     # Process pourpoints
     pourpoints_reader = io.VectorReader(outvector, pourpoint_writer.layername)
     bluespot_reader = io.RasterReader(labeled_writer.filepath)
@@ -115,36 +131,36 @@ def _process_all(dem, outdir, accum, filter, mm, zresolution, vector):
 
     stream_tool = streams.StreamTool(pourpoints_reader, bluespot_reader, flowdir_reader, nodes_writer, streams_writer)
     stream_tool.process()
-
+    logger.debug("Processing volumes...")
     # Calculate volumes
     nodes_reader = io.VectorReader(outvector, nodes_writer.layername)
     volumes_writer = io.VectorWriter(ogr_drv, outvector, 'initvolumes', None, ogr.wkbPoint, crs, dsco=ogr_dsco, lco = ogr_lco) 
     rain_tool = raintool.SimpleVolumeTool(nodes_reader, volumes_writer, "inputv" ,mm)
     rain_tool.process()
-
+    logger.debug("Processing final state...")
     # Process final state
     volumes_reader = io.VectorReader(outvector, volumes_writer.layername)
     events_writer = io.VectorWriter(ogr_drv, outvector, 'finalstate', None, ogr.wkbPoint, crs, dsco=ogr_dsco, lco = ogr_lco)
     calculator = network.FinalStateCalculator(volumes_reader, "inputv", events_writer)
     calculator.process()
-
+    logger.debug("Processing hypsometry...")
     # Hypsometry
     pourpoints_reader = io.VectorReader(outvector, pourpoint_writer.layername)
     hyps_writer = io.VectorWriter(ogr_drv, outvector, "hypsometry", None, ogr.wkbNone, dem_reader.crs)
     hyps.bluespot_hypsometry_io(bluespot_reader, dem_reader, pourpoints_reader, zresolution, hyps_writer)
-
+    logger.debug("Processing final levels...")
     # Approximation on levels
     finalvols_reader = io.VectorReader(outvector, events_writer.layername)
     hyps_reader = io.VectorReader(outvector, hyps_writer.layername)
     levels_writer = io.VectorWriter(ogr_drv, outvector, "finallevels", None, ogr.wkbNone, dem_reader.crs)
     approx.approx_water_level_io(finalvols_reader, hyps_reader, levels_writer)    
-
+    logger.debug("Processing final depths...")
     # Approximation on bluespots
     levels_reader = io.VectorReader(outvector, levels_writer.layername)
     final_depths_writer = io.RasterWriter(os.path.join(outdir, 'finaldepths.tif'), tr, crs)
     final_bs_writer = io.RasterWriter(os.path.join(outdir, 'finalbluespots.tif'), tr, crs, 0)
     approx.approx_bluespots_io(bluespot_reader, levels_reader, dem_reader, final_depths_writer, final_bs_writer)
-
+    logger.debug("Processing final watersheds...")
     # Polygonize final bluespots
     logger.info("Polygonizing final bluespots")
     vectorize_labels_file_io(final_bs_writer.filepath, outvector, "finalbluespots", ogr_drv, ogr_dsco, ogr_lco)

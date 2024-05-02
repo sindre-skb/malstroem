@@ -4,11 +4,21 @@ from datetime import datetime
 import sys
 import malstroem.scripts.complete as complete
 import os
+import logging 
+from logging.handlers import RotatingFileHandler
 
+# Create a logger for the current module
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)  # Set the logging level
 
-# Define similar functions for other subcommands...
+# Set up file handler0
 
-# Now you can call these functions directly from your other Python script
+file_handler = RotatingFileHandler('logs/app.log', maxBytes=5*1024*1024, backupCount=3)
+file_handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(module)s - %(message)s'))
+file_handler.setLevel(logging.DEBUG)  # Set the logging level for the file handler
+
+# Add the handler to the logger
+logger.addHandler(file_handler)
 
 def generate_api_key(length=32):
     """Generate a random API key."""
@@ -28,6 +38,7 @@ def verify_api_key():
     if request.method == 'POST':
         api_key = request.headers.get('X-API-Key')
         if api_key not in VALID_API_KEYS:
+            logger.warning(f"Unauthorized request with API key: {api_key}")    
             return jsonify({'error': 'Unauthorized'}), 401
 
 def run_malstroem_processing(data):
@@ -44,16 +55,19 @@ def process():
 @app.route('/complete', methods=['POST'])
 def process_complete():
     data=request.json
+    logger.debug("Received request: %s", data)
     dem = '/cache/'+data.get('raster_key')
     if not os.path.exists(dem):
         return jsonify({'error': 'Raster file not found'}), 404
-    outdir = '/output/'+data.get('outdir')
+    outdir = f"/output/{data.get('outdir')}"
+    logger.debug("Output directory: %s", outdir)
     os.makedirs(outdir, exist_ok=True)
     mm = data.get('mm')
     filter = data.get('filter')
     zresolution = data.get('zresolution')
     accum = data.get('accum')
     vector = data.get('vector')
+    logger.debug("Starting the computation")
     message=complete._process_all(dem, outdir, accum, filter, mm, zresolution, vector)
     return jsonify(
         {   'message': message,
@@ -68,6 +82,12 @@ def process_complete():
             'status': 'Success'
         }
     ), 200
+
+@app.route('/logrotate', methods=['GET'])
+def logrotate():
+    """Rotate the log file."""
+    file_handler.doRollover()
+    return jsonify({'message': 'Log file rotated'}), 200
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
