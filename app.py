@@ -2,7 +2,7 @@ from flask import Flask, request, jsonify
 import secrets
 from datetime import datetime
 import sys
-import malstroem.scripts.complete as complete
+from malstroem.scripts import complete as malstroem_complete
 
 
 
@@ -41,8 +41,17 @@ def process():
     data = request.json
     return jsonify(run_malstroem_processing(data))
 
-def process_complete(dem, outdir, mm=20, filter='volume > 2.5', zresolution=0.1, accum=None, vector=None):
-    return complete._process_all(dem, outdir, accum, filter, mm, zresolution, vector)
+@app.route('/complete', methods=['POST'])
+def complete():
+    data = request.json
+    dem = data['dem']
+    outdir = data['outdir']
+    mm = data['mm']
+    filter = data['filter']
+    zresolution = data['zresolution']
+    accum = None
+    vector = None
+    return malstroem_complete._process_all(dem, outdir, accum, filter, mm, zresolution, vector)
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
