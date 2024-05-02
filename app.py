@@ -3,7 +3,7 @@ import secrets
 from datetime import datetime
 import sys
 import malstroem.scripts.complete as complete
-
+import os
 
 
 # Define similar functions for other subcommands...
@@ -44,8 +44,11 @@ def process():
 @app.route('/complete', methods=['POST'])
 def process_complete():
     data=request.json
-    dem = data.get('dem')
-    outdir = data.get('outdir')
+    dem = '/cache/'+data.get('raster_key')
+    if not os.path.exists(dem):
+        return jsonify({'error': 'Raster file not found'}), 404
+    outdir = '/output/'+data.get('outdir')
+    os.makedirs(outdir, exist_ok=True)
     mm = data.get('mm')
     filter = data.get('filter')
     zresolution = data.get('zresolution')
@@ -54,7 +57,7 @@ def process_complete():
     message=complete._process_all(dem, outdir, accum, filter, mm, zresolution, vector)
     return jsonify(
         {   'message': message,
-            'outdir': outdir,
+            'outdir': data.get('outdir'),
             'dem': dem,
             'mm': mm,
             'filter': filter,
