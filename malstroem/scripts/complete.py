@@ -13,7 +13,7 @@
 # -------------------------------------------------------------------------------------------------
 from __future__ import (absolute_import, division, print_function) #, unicode_literals)
 from builtins import *
-
+from datetime import datetime
 import click
 import click_log
 
@@ -49,6 +49,8 @@ def _process_all(dem, outdir, accum, filter, mm, zresolution, vector):
     # Check that outdir exists and is empty
     if not os.path.isdir(outdir) or not os.path.exists(outdir) or os.listdir(outdir):
         logger.error("outdir isn't an empty directory")
+        with open('log.txt', 'a') as f:
+            f.write(f'{datetime.now()} - outdir isn\'t an empty directory\n')
         return 1
 
     outvector = os.path.join(outdir, 'malstroem.gpkg')

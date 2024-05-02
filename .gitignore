@@ -112,3 +112,4 @@ outdir/
 *.gpkg
 dtm/
 output/
+log.txt

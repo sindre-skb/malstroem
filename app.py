@@ -25,7 +25,7 @@ VALID_API_KEYS = [
 # Middleware function to verify API key
 @app.before_request
 def verify_api_key():
-    if request.endpoint == 'process' and request.method == 'POST':
+    if request.method == 'POST':
         api_key = request.headers.get('X-API-Key')
         if api_key not in VALID_API_KEYS:
             return jsonify({'error': 'Unauthorized'}), 401
