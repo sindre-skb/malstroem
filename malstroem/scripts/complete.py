@@ -51,7 +51,7 @@ def _process_all(dem, outdir, accum, filter, mm, zresolution, vector):
         logger.error("outdir isn't an empty directory")
         with open('log.txt', 'a') as f:
             f.write(f'{datetime.now()} - outdir isn\'t an empty directory\n')
-        return 1
+        return 'outdir isn\'t an empty directory'
 
     outvector = os.path.join(outdir, 'malstroem.gpkg')
     ogr_drv = 'gpkg'
@@ -149,3 +149,4 @@ def _process_all(dem, outdir, accum, filter, mm, zresolution, vector):
     logger.info("Polygonizing final bluespots")
     vectorize_labels_file_io(final_bs_writer.filepath, outvector, "finalbluespots", ogr_drv, ogr_dsco, ogr_lco)
     logger.info("Complete done...")
+    return 'Complete done...'

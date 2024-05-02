@@ -51,8 +51,20 @@ def process_complete():
     zresolution = data.get('zresolution')
     accum = data.get('accum')
     vector = data.get('vector')
-    complete._process_all(dem, outdir, accum, filter, mm, zresolution, vector)
-    return jsonify({'status': 'Success'}), 200
+    message=complete._process_all(dem, outdir, accum, filter, mm, zresolution, vector)
+    return jsonify(
+        {   'message': message,
+            'outdir': outdir,
+            'dem': dem,
+            'mm': mm,
+            'filter': filter,
+            'zresolution': zresolution,
+            'accum': accum,
+            'vector': vector,
+            'finished': datetime.now().isoformat(),
+            'status': 'Success'
+        }
+    ), 200
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
