@@ -49,6 +49,7 @@ class DemTool(object):
         self.output_accum = output_accum
 
         self.logger = logging.getLogger(__name__)
+        self.logger.setLevel(logging.DEBUG)
 
     def process(self):
         """Process
