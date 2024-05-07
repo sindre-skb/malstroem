@@ -4,7 +4,7 @@ import numpy as np
 from tqdm import tqdm
 import fiona 
 from shapely.geometry import shape, LineString, mapping
-from utils import repair_linestring_gpkg
+from .utils import repair_linestring_gpkg
 
 
 n=16

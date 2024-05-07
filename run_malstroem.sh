@@ -1,7 +1,7 @@
 #!/bin/bash
 conda activate malstroem
 
-objectid="005.4B"
+objectid=$1
 # Directory containing the .tif files
 input_dir="/home/sindre/dtm/merged_${objectid}"
 # Base directory for output
