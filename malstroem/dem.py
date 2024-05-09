@@ -15,9 +15,12 @@ from __future__ import (absolute_import, division, print_function) #, unicode_li
 
 from builtins import *
 
+import numpy as np
+
 from malstroem.algorithms import fill
 from .algorithms import speedups, flow, dtypes
 import logging
+dem_null_value=-999
 
 
 class DemTool(object):
@@ -51,12 +54,16 @@ class DemTool(object):
         self.logger = logging.getLogger(__name__)
         self.logger.setLevel(logging.DEBUG)
 
-    def process(self):
+    def process(self, noise_extent=0):
         """Process
         """
         dem = self.input_dem.read().astype(dtypes.DTYPE_DTM, casting='same_kind', copy=False)
         transform = self.input_dem.transform
 
+        if noise_extent > 0:
+            mask = dem != dem_null_value
+            perturbation = np.random.uniform(-noise_extent, noise_extent, dem.shape)
+            dem[mask] += perturbation[mask]
         # Input cells must be square
         assert abs(abs(transform[1]) - abs(transform[5])) < 0.01 * abs(transform[1]), "Input cells must be square"
 
