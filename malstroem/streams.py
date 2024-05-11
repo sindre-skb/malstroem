@@ -117,6 +117,8 @@ class StreamTool(object):
 
                     # Transform coords
                     world_coords = [transform_cell_to_world(c, transform) for c in n['geometry']]
+                    if len(world_coords)<2:
+                        continue
                     geom = dict(type='LineString', coordinates=list(world_coords))
                     geojson = dict(id=n['id'], geometry=geom, properties=props, type='Feature')
                     geojson_streams.append(geojson)
