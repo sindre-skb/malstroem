@@ -3,6 +3,8 @@ import geopandas as gpd
 from django.contrib.gis.db.models import Union
 from skb.utils import to_gdf, flatten_3d_multilinestring
 from skb.service.geo import RasterService
+from shapely import wkt
+from django.contrib.gis.geos import GEOSGeometry
 
 from skb.models import (
     Stikkrenne, 
@@ -15,11 +17,14 @@ raster_service = RasterService(prefix='nhm')
 malstroem_run = MalstroemRun.objects.get(name='test-4563')
 
 union_geom = malstroem_run.catchments.aggregate(union=Union('geometry'))['union']
+gdf_union = gpd.GeoDataFrame(geometry=[wkt.loads(union_geom.wkt)], crs='EPSG:25833').to_crs('EPSG:4326')
+union_geom_4326 = GEOSGeometry(gdf_union.loc[0, 'geometry'].wkt)
 
-byggflater = Byggflate.objects.filter(geometry__intersects=union_geom)
-
+byggflater = Byggflate.objects.filter(geometry__intersects=union_geom_4326)
 stikkrenner = Stikkrenne.objects.filter(geometry__intersects=union_geom)
+
 gdf_stikkrenner = to_gdf(stikkrenner, crs='EPSG:25833')
+gdf_byggflater = to_gdf(byggflater, crs='EPSG:4326').to_crs('EPSG:25833')
 
 gdf_stikkrenner['minz'] = gdf_stikkrenner['geometry'].apply(lambda x: min(flatten_3d_multilinestring(x)[1]))
 
@@ -35,8 +40,6 @@ result = complete._process_all(
     0.1,
     None,
     gdf_stikkrenner=gdf_stikkrenner,
-    gdf_byggflater=None,
+    gdf_byggflater=gdf_byggflater,
     noise_level=0
 )
-
-# _process_all(dem, outdir, accum, filter, mm, zresolution, vector, gdf_stikkrenner=None, gdf_byggflater=None, noise_level=0):
