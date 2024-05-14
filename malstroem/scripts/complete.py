@@ -22,11 +22,10 @@ from malstroem.vector import vectorize_labels_file_io
 from ._utils import parse_filter
 from osgeo import ogr, osr
 import os
+import rasterio
 
 import logging 
 from logging.handlers import RotatingFileHandler
-from skbgis.raster import create_mask
-dem_null_value=-999
 
 # Create a logger for the current module
 logger = logging.getLogger(__name__)
@@ -72,9 +71,8 @@ def _process_all(dem, outdir, accum, filter, mm, zresolution, vector, gdf_stikkr
     ogr_drv = 'gpkg'
     ogr_dsco = []
     ogr_lco = ["SPATIAL_INDEX=NO"]
-    nodatasubst = -999
-
-
+    src = rasterio.open(dem)
+    nodatasubst = src.nodata
     filter_function = parse_filter(filter)
     dem_reader = io.RasterReader(dem, nodatasubst=nodatasubst)
     tr = dem_reader.transform
@@ -94,7 +92,8 @@ def _process_all(dem, outdir, accum, filter, mm, zresolution, vector, gdf_stikkr
     depths_writer = io.RasterWriter(os.path.join(outdir, 'bs_depths.tif'), tr, crs)
     accum_writer = io.RasterWriter(os.path.join(outdir, 'accum.tif'), tr, crs) if accum else None
     logger.debug('Processing DEM')
-    dtmtool = demtool.DemTool(dem_reader, filled_writer, flowdir_writer, depths_writer, accum_writer)
+    dtmtool = demtool.DemTool(dem_reader, filled_writer, flowdir_writer, depths_writer, src=src, output_accum=None)
+
     dtmtool.process(gdf_stikkrenner=gdf_stikkrenner, gdf_byggflater=gdf_byggflater, noise_level=noise_level)
 
     logger.debug("Processing bluespots")

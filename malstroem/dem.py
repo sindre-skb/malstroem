@@ -16,10 +16,13 @@ from __future__ import (absolute_import, division, print_function) #, unicode_li
 from builtins import *
 
 import numpy as np
-from skbgis.raster import create_mask
+from rasterstats import zonal_stats
+from rasterio.features import rasterize
+import rasterio
 from malstroem.algorithms import fill
 from .algorithms import speedups, flow, dtypes
 import logging
+import pandas as pd
 dem_null_value=-999
 
 
@@ -44,15 +47,35 @@ class DemTool(object):
         Writes accumulated flow
     """
 
-    def __init__(self, input_dem, output_filled, output_flowdir, output_depths, output_accum=None):
+    def __init__(self, input_dem, output_filled, output_flowdir, output_depths, src=None, output_accum=None):
         self.input_dem = input_dem
+        self.src = src
         self.output_filled = output_filled
         self.output_flowdir = output_flowdir
         self.output_depths = output_depths
         self.output_accum = output_accum
-
         self.logger = logging.getLogger(__name__)
         self.logger.setLevel(logging.DEBUG)
+
+    def create_mask(self, gdf, offset=10, baseline='mean'):
+        terrain = self.src.read(1)
+        if baseline == 0:
+            gdf['value'] = offset
+        else:
+            stats = zonal_stats(
+                gdf,
+                terrain,
+                stats=baseline,
+                affine=self.src.transform,
+                geojson_out=True,
+                nodata=self.src.nodata            
+            )
+            df_stats = pd.DataFrame([x['properties'] for x in stats])
+            gdf = gdf.merge(df_stats[['id', baseline]], on='id', how='left')
+            gdf['value'] = gdf[baseline] + offset
+        shapes = ((geom, value) for geom, value in zip(gdf.geometry, gdf['value']))
+        building_mask = rasterize(shapes, out_shape=terrain.shape, fill=0, transform=self.src.transform, merge_alg=rasterio.enums.MergeAlg.add)
+        return building_mask
 
     def process(self, gdf_stikkrenner=None, gdf_byggflater=None, noise_level=0):
         """Process
@@ -64,10 +87,26 @@ class DemTool(object):
             mask = dem != dem_null_value
             perturbation = np.random.uniform(-noise_level, noise_level, dem.shape)
             dem[mask] += perturbation[mask]
-        
+
         if gdf_stikkrenner is not None:
-            mask, meta = create_mask(self.input_dem, gdf_stikkrenner, offset=0, baseline='mean')
-            dem[mask==0] = dem_null_value
+            mask_stikkrenner = self.create_mask(gdf_stikkrenner, offset=gdf_stikkrenner['minz'], baseline=0)
+            dem[mask_stikkrenner!=0] = mask_stikkrenner[mask_stikkrenner!=0] 
+
+        if gdf_byggflater is not None:
+            mask_byggflater = self.create_mask(self.input_dem, gdf_byggflater, offset=10, baseline='mean')
+            dem[mask_byggflater!=0] = mask_byggflater[mask_byggflater!=0]
+
+        with rasterio.open(
+            'debug_terrain.tif', 'w',
+            driver='GTiff',
+            height=self.src.height,
+            width=self.src.width,
+            count=1,
+            dtype=str(dem.dtype),
+            crs=self.src.crs,
+            transform=self.src.transform,
+        ) as dst:
+            dst.write(dem, 1)
 
         # Input cells must be square
         assert abs(abs(transform[1]) - abs(transform[5])) < 0.01 * abs(transform[1]), "Input cells must be square"
