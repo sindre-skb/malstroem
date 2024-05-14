@@ -25,7 +25,7 @@ import os
 
 import logging 
 from logging.handlers import RotatingFileHandler
-
+from skbgis.raster import create_mask
 dem_null_value=-999
 
 # Create a logger for the current module
@@ -54,7 +54,7 @@ logger.addHandler(file_handler)
 def process_all(dem, outdir, accum, filter, mm, zresolution, vector):
     return _process_all(dem, outdir, accum, filter, mm, zresolution, vector)
 
-def _process_all(dem, outdir, accum, filter, mm, zresolution, vector, noise_extent=0):
+def _process_all(dem, outdir, accum, filter, mm, zresolution, vector, gdf_stikkrenner=None, gdf_byggflater=None, noise_level=0):
     """Quick option to run all processes.
 
     \b
@@ -95,7 +95,7 @@ def _process_all(dem, outdir, accum, filter, mm, zresolution, vector, noise_exte
     accum_writer = io.RasterWriter(os.path.join(outdir, 'accum.tif'), tr, crs) if accum else None
     logger.debug('Processing DEM')
     dtmtool = demtool.DemTool(dem_reader, filled_writer, flowdir_writer, depths_writer, accum_writer)
-    dtmtool.process(noise_extent=noise_extent)
+    dtmtool.process(gdf_stikkrenner=gdf_stikkrenner, gdf_byggflater=gdf_byggflater, noise_level=noise_level)
 
     logger.debug("Processing bluespots")
     # Process bluespots

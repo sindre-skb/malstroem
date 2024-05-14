@@ -16,7 +16,7 @@ from __future__ import (absolute_import, division, print_function) #, unicode_li
 from builtins import *
 
 import numpy as np
-
+from skbgis.raster import create_mask
 from malstroem.algorithms import fill
 from .algorithms import speedups, flow, dtypes
 import logging
@@ -54,16 +54,21 @@ class DemTool(object):
         self.logger = logging.getLogger(__name__)
         self.logger.setLevel(logging.DEBUG)
 
-    def process(self, noise_extent=0):
+    def process(self, gdf_stikkrenner=None, gdf_byggflater=None, noise_level=0):
         """Process
         """
         dem = self.input_dem.read().astype(dtypes.DTYPE_DTM, casting='same_kind', copy=False)
         transform = self.input_dem.transform
 
-        if noise_extent > 0:
+        if noise_level > 0:
             mask = dem != dem_null_value
-            perturbation = np.random.uniform(-noise_extent, noise_extent, dem.shape)
+            perturbation = np.random.uniform(-noise_level, noise_level, dem.shape)
             dem[mask] += perturbation[mask]
+        
+        if gdf_stikkrenner is not None:
+            mask, meta = create_mask(self.input_dem, gdf_stikkrenner, offset=0, baseline='mean')
+            dem[mask==0] = dem_null_value
+
         # Input cells must be square
         assert abs(abs(transform[1]) - abs(transform[5])) < 0.01 * abs(transform[1]), "Input cells must be square"
 
