@@ -14,7 +14,7 @@ from skb.models import (
 
 raster_service = RasterService(prefix='nhm')
 
-malstroem_run = MalstroemRun.objects.get(name='test-4563')
+malstroem_run = MalstroemRun.objects.get(name='test-1568')
 
 union_geom = malstroem_run.catchments.aggregate(union=Union('geometry'))['union']
 gdf_union = gpd.GeoDataFrame(geometry=[wkt.loads(union_geom.wkt)], crs='EPSG:25833').to_crs('EPSG:4326')
@@ -26,7 +26,7 @@ stikkrenner = Stikkrenne.objects.filter(geometry__intersects=union_geom)
 gdf_stikkrenner = to_gdf(stikkrenner, crs='EPSG:25833')
 gdf_byggflater = to_gdf(byggflater, crs='EPSG:4326').to_crs('EPSG:25833')
 
-gdf_stikkrenner['minz'] = gdf_stikkrenner['geometry'].apply(lambda x: min(flatten_3d_multilinestring(x)[1]))
+gdf_stikkrenner['offset'] = gdf_stikkrenner['geometry'].apply(lambda x: min(flatten_3d_multilinestring(x)[1]))
 
 catchment = malstroem_run.catchments.first()
 file_path = raster_service.storage_service.fetch_and_cache_file(catchment.dtm.key)

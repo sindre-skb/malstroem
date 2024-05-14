@@ -89,15 +89,18 @@ class DemTool(object):
             dem[mask] += perturbation[mask]
 
         if gdf_stikkrenner is not None:
-            mask_stikkrenner = self.create_mask(gdf_stikkrenner, offset=gdf_stikkrenner['minz'], baseline=0)
-            dem[mask_stikkrenner!=0] = mask_stikkrenner[mask_stikkrenner!=0] 
-
+            mask_stikkrenner = self.create_mask(gdf_stikkrenner, offset=gdf_stikkrenner['offset'], baseline=0)
+            filter = (mask_stikkrenner!=0) & (dem!=self.src.nodata)
+            dem[filter] = mask_stikkrenner[filter] 
+    
         if gdf_byggflater is not None:
-            mask_byggflater = self.create_mask(self.input_dem, gdf_byggflater, offset=10, baseline='mean')
-            dem[mask_byggflater!=0] = mask_byggflater[mask_byggflater!=0]
+            mask_byggflater = self.create_mask(gdf_byggflater, offset=10, baseline='mean')
+            filter = (mask_byggflater!=0) & (dem!=self.src.nodata)
+            dem[filter] = mask_byggflater[filter]
+        
 
         with rasterio.open(
-            'debug_terrain.tif', 'w',
+            'debug_hello.tif', 'w',
             driver='GTiff',
             height=self.src.height,
             width=self.src.width,
