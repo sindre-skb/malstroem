@@ -83,22 +83,21 @@ class DemTool(object):
         dem = self.input_dem.read().astype(dtypes.DTYPE_DTM, casting='same_kind', copy=False)
         transform = self.input_dem.transform
 
-        if noise_level > 0:
-            mask = dem != dem_null_value
-            perturbation = np.random.uniform(-noise_level, noise_level, dem.shape)
-            dem[mask] += perturbation[mask]
-
         if gdf_stikkrenner is not None:
             mask_stikkrenner = self.create_mask(gdf_stikkrenner, offset=gdf_stikkrenner['offset'], baseline=0)
             filter = (mask_stikkrenner!=0) & (dem!=self.src.nodata)
-            dem[filter] = mask_stikkrenner[filter] 
+            dem[filter] += mask_stikkrenner[filter] 
     
         if gdf_byggflater is not None:
             mask_byggflater = self.create_mask(gdf_byggflater, offset=10, baseline='mean')
             filter = (mask_byggflater!=0) & (dem!=self.src.nodata)
             dem[filter] = mask_byggflater[filter]
         
-
+        if noise_level > 0:
+            mask = dem != dem_null_value
+            perturbation = np.random.uniform(-noise_level, noise_level, dem.shape)
+            dem[mask] += perturbation[mask]
+ 
         with rasterio.open(
             'debug_hello.tif', 'w',
             driver='GTiff',

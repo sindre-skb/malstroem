@@ -7,7 +7,7 @@ from shapely import wkt
 from django.contrib.gis.geos import GEOSGeometry
 
 from skb.models import (
-    Stikkrenne, 
+    Pipe, 
     Byggflate,
     MalstroemRun,
 )
@@ -21,7 +21,7 @@ gdf_union = gpd.GeoDataFrame(geometry=[wkt.loads(union_geom.wkt)], crs='EPSG:258
 union_geom_4326 = GEOSGeometry(gdf_union.loc[0, 'geometry'].wkt)
 
 byggflater = Byggflate.objects.filter(geometry__intersects=union_geom_4326)
-stikkrenner = Stikkrenne.objects.filter(geometry__intersects=union_geom)
+stikkrenner = Pipe.objects.filter(geometry__intersects=union_geom)
 
 gdf_stikkrenner = to_gdf(stikkrenner, crs='EPSG:25833')
 gdf_byggflater = to_gdf(byggflater, crs='EPSG:4326').to_crs('EPSG:25833')
