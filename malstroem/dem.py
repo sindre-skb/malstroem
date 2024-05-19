@@ -54,15 +54,15 @@ class DemTool(object):
         self.logger = logging.getLogger(__name__)
         self.logger.setLevel(logging.DEBUG)
 
-    def process(self, noise_extent=0):
+    def process(self, noise_level=0):
         """Process
         """
         dem = self.input_dem.read().astype(dtypes.DTYPE_DTM, casting='same_kind', copy=False)
         transform = self.input_dem.transform
 
-        if noise_extent > 0:
+        if noise_level > 0:
             mask = dem != dem_null_value
-            perturbation = np.random.uniform(-noise_extent, noise_extent, dem.shape)
+            perturbation = np.random.uniform(-noise_level, noise_level, dem.shape)
             dem[mask] += perturbation[mask]
         # Input cells must be square
         assert abs(abs(transform[1]) - abs(transform[5])) < 0.01 * abs(transform[1]), "Input cells must be square"

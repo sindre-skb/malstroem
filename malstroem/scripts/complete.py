@@ -54,7 +54,7 @@ logger.addHandler(file_handler)
 def process_all(dem, outdir, accum, filter, mm, zresolution, vector):
     return _process_all(dem, outdir, accum, filter, mm, zresolution, vector)
 
-def _process_all(dem, outdir, accum, filter, mm, zresolution, vector, noise_extent=0):
+def _process_all(dem, outdir, accum, filter, mm, zresolution, vector, noise_level=0, gdf_pipes=None, gdf_buildings=None):
     """Quick option to run all processes.
 
     \b
@@ -95,7 +95,7 @@ def _process_all(dem, outdir, accum, filter, mm, zresolution, vector, noise_exte
     accum_writer = io.RasterWriter(os.path.join(outdir, 'accum.tif'), tr, crs) if accum else None
     logger.debug('Processing DEM')
     dtmtool = demtool.DemTool(dem_reader, filled_writer, flowdir_writer, depths_writer, accum_writer)
-    dtmtool.process(noise_extent=noise_extent)
+    dtmtool.process(noise_level=noise_level)
 
     logger.debug("Processing bluespots")
     # Process bluespots
