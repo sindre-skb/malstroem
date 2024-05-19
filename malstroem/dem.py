@@ -23,6 +23,7 @@ from malstroem.algorithms import fill
 from .algorithms import speedups, flow, dtypes
 import logging
 import pandas as pd
+from scipy.ndimage import gaussian_filter
 dem_null_value=-999
 
 
@@ -97,6 +98,8 @@ class DemTool(object):
             mask = dem != dem_null_value
             perturbation = np.random.uniform(-noise_level, noise_level, dem.shape)
             dem[mask] += perturbation[mask]
+            dem = gaussian_filter(dem, sigma=2)
+
  
         with rasterio.open(
             'debug_hello.tif', 'w',

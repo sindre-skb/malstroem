@@ -43,7 +43,13 @@ def approx_water_level_io(finalvols_reader, hyps_reader, levels_writer):
     for bspot_finalstate in bspot_finalstate_features:
         props = bspot_finalstate["properties"]
         bsid = int(props["bspot_id"])
-        final_vol = float(props["v"])
+        final_vol = props.get("v")
+
+        if final_vol is None:
+            logger.warning(f"Bluespot {bsid} has no final volume. Skipping.")
+            continue
+
+        final_vol = float(final_vol)
 
         h = parse_hyps_feature(hyps_index[bsid])
 
@@ -85,7 +91,9 @@ def approx_bluespots_io(
 
     logger.info("Reading approximated water levels")
     # Make bluespot_id -> bluespot_waterlevel_z dictionary
-    bluespot_water_levels = { int(x["properties"]["bspot_id"]) : float(x["properties"]["approx_z"]) for x in bluespot_water_levels_reader.read_geojson_features() if x["properties"]["nodetype"] == "pourpoint"}
+    features = bluespot_water_levels_reader.read_geojson_features()
+    features = [x for x in features if (x.get('properties') and x['properties'].get('approx_z'))]
+    bluespot_water_levels = { int(x["properties"]["bspot_id"]) : float(x["properties"]["approx_z"]) for x in features if x["properties"]["nodetype"] == "pourpoint"}
     # turn into list (list index == bluespot_id)
     value_list = _labelvaluedict_to_list(bluespot_water_levels, background=background_label)
 
