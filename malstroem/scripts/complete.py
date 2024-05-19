@@ -85,7 +85,8 @@ def _process_all(dem, outdir, accum, filter, mm, zresolution, vector, gdf_stikkr
     logger.info('   zresolution: {}m'.format(zresolution))
     logger.info('   accum: {}'.format(accum))
     logger.info('   filter: {}'.format(filter))
-
+    logger.info('   buildings: {}'.format(0 if gdf_byggflater is None else gdf_byggflater.shape[0]))
+    logger.info('   pipes: {}'.format(0 if gdf_stikkrenner is None else gdf_stikkrenner.shape[0]))
     # Process DEM
     filled_writer = io.RasterWriter(os.path.join(outdir, 'filled.tif'), tr, crs, nodatasubst)
     flowdir_writer = io.RasterWriter(os.path.join(outdir, 'flowdir.tif'), tr, crs)
